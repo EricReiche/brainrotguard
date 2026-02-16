@@ -190,6 +190,9 @@ class BrainRotGuardBot:
             if parts[0] == "chan_page" and len(parts) == 2:
                 await self._cb_channel_page(query, int(parts[1]))
                 return
+            if parts[0] == "pending_page" and len(parts) == 2:
+                await self._cb_pending_page(query, int(parts[1]))
+                return
         except (ValueError, IndexError):
             await query.answer("Invalid callback.")
             return
@@ -205,6 +208,16 @@ class BrainRotGuardBot:
                 await self._update_channel_list_message(query)
             else:
                 await query.answer(f"Not found: {ch_name}")
+            return
+
+        # Resend notification callback from /pending
+        if parts[0] == "resend" and len(parts) == 2:
+            video = self.video_store.get_video(parts[1])
+            if not video or video['status'] != 'pending':
+                await query.answer("No longer pending.")
+                return
+            await query.answer("Resending...")
+            await self.notify_new_request(video)
             return
 
         if len(parts) != 2:
@@ -307,6 +320,8 @@ class BrainRotGuardBot:
             "`/changelog` - Latest changes"
         ), parse_mode=MD2)
 
+    _PENDING_PAGE_SIZE = 5
+
     async def _cmd_pending(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not self._check_admin(update):
             return
@@ -314,11 +329,54 @@ class BrainRotGuardBot:
         if not pending:
             await update.message.reply_text("No pending requests.")
             return
-        lines = ["**Pending Requests:**\n"]
-        for v in pending:
+        text, keyboard = self._render_pending_page(pending, 0)
+        await update.message.reply_text(text, parse_mode=MD2, reply_markup=keyboard)
+
+    def _render_pending_page(self, pending: list, page: int) -> tuple[str, InlineKeyboardMarkup]:
+        """Render a page of the pending list with resend buttons."""
+        total = len(pending)
+        ps = self._PENDING_PAGE_SIZE
+        start = page * ps
+        end = min(start + ps, total)
+        page_items = pending[start:end]
+        total_pages = (total + ps - 1) // ps
+
+        header = f"**Pending Requests ({total})**"
+        if total_pages > 1:
+            header += f" \u00b7 pg {page + 1}/{total_pages}"
+        lines = [header, ""]
+        buttons = []
+        for v in page_items:
             ch = _channel_md_link(v['channel_name'], v.get('channel_id'))
-            lines.append(f"- {v['title']} _{ch}_")
-        await update.message.reply_text(_md("\n".join(lines)), parse_mode=MD2)
+            duration = format_duration(v.get('duration'))
+            lines.append(f"\u2022 {v['title']}")
+            lines.append(f"  _{ch} \u00b7 {duration}_")
+            lines.append("")
+            buttons.append([InlineKeyboardButton(
+                f"Resend: {v['title'][:30]}", callback_data=f"resend:{v['video_id']}",
+            )])
+
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton("\u25c0 Back", callback_data=f"pending_page:{page - 1}"))
+        remaining = total - end
+        if remaining > 0:
+            nav.append(InlineKeyboardButton(
+                f"Show more ({remaining})", callback_data=f"pending_page:{page + 1}",
+            ))
+        if nav:
+            buttons.append(nav)
+        return _md("\n".join(lines)), InlineKeyboardMarkup(buttons)
+
+    async def _cb_pending_page(self, query, page: int) -> None:
+        """Handle pending list pagination."""
+        pending = self.video_store.get_pending()
+        if not pending:
+            await query.answer("No pending requests.")
+            return
+        await query.answer()
+        text, keyboard = self._render_pending_page(pending, page)
+        await query.edit_message_text(text=text, parse_mode=MD2, reply_markup=keyboard)
 
     _APPROVED_PAGE_SIZE = 10
 
