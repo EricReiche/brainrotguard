@@ -6,10 +6,25 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+:root {
+    --bg-base: #0f0f23;
+    --bg-card: #1a1a3e;
+    --bg-card-hover: #1e1e45;
+    --accent: #e94560;
+    --accent-dark: #c73650;
+    --text-primary: #e0e0e0;
+    --text-muted: #888;
+    --text-dim: #555;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-faint: rgba(255, 255, 255, 0.04);
+    --radius-card: 14px;
+    --radius-btn: 10px;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0f0f23;
-    color: #e0e0e0;
+    background: var(--bg-base);
+    color: var(--text-primary);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
 }
@@ -28,9 +43,9 @@ header {
     display: flex;
     align-items: center;
     gap: 16px;
-    background: linear-gradient(135deg, #1a1a3e 0%, #0f0f23 100%);
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-base) 100%);
     padding: 10px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -61,9 +76,9 @@ header {
     padding: 10px 16px;
     font-size: 13px;
     border: none;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    color: #e0e0e0;
+    border-radius: var(--radius-btn);
+    background: var(--border-subtle);
+    color: var(--text-primary);
     outline: none;
     min-width: 0;
     transition: background 0.2s;
@@ -77,23 +92,27 @@ header {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.header-search-btn {
-    padding: 10px 22px;
-    font-size: 13px;
+/* === Shared Primary Button === */
+.btn-primary {
     font-weight: 600;
-    background: linear-gradient(135deg, #e94560 0%, #c73650 100%);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-btn);
     cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
     transition: transform 0.15s, opacity 0.15s;
 }
 
-.header-search-btn:active {
+.btn-primary:active {
     transform: scale(0.95);
     opacity: 0.9;
+}
+
+.header-search-btn {
+    padding: 10px 22px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 /* === Main Content === */
@@ -107,7 +126,7 @@ main {
 .section-title {
     font-size: 18px;
     font-weight: 600;
-    color: #888;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 20px;
@@ -121,11 +140,11 @@ main {
 }
 
 .video-card {
-    background: #1a1a3e;
-    border-radius: 14px;
+    background: var(--bg-card);
+    border-radius: var(--radius-card);
     overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-faint);
 }
 
 .video-card:hover {
@@ -182,7 +201,7 @@ main {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    color: #e0e0e0;
+    color: var(--text-primary);
 }
 
 .video-channel {
@@ -192,13 +211,13 @@ main {
 
 .video-date {
     font-size: 12px;
-    color: #555;
+    color: var(--text-dim);
     margin-top: 2px;
 }
 
 .video-views {
     font-size: 12px;
-    color: #555;
+    color: var(--text-dim);
     margin-top: 2px;
 }
 
@@ -212,22 +231,22 @@ main {
 .result-card {
     display: flex;
     gap: 16px;
-    background: #1a1a3e;
-    border-radius: 14px;
+    background: var(--bg-card);
+    border-radius: var(--radius-card);
     padding: 12px;
     align-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-faint);
     transition: background 0.2s;
 }
 
 .result-card:hover {
-    background: #1e1e45;
+    background: var(--bg-card-hover);
 }
 
 .result-thumb-wrap {
     width: 200px;
     min-width: 200px;
-    border-radius: 10px;
+    border-radius: var(--radius-btn);
     overflow: hidden;
 }
 
@@ -259,18 +278,6 @@ main {
 .request-button {
     padding: 12px 24px;
     font-size: 15px;
-    font-weight: 600;
-    background: linear-gradient(135deg, #e94560 0%, #c73650 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.15s, opacity 0.15s;
-}
-
-.request-button:active {
-    transform: scale(0.93);
-    opacity: 0.9;
 }
 
 /* === Pending Page === */
@@ -286,7 +293,7 @@ main {
 
 .pending-thumbnail {
     width: 100%;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     margin-bottom: 16px;
 }
 
@@ -312,7 +319,7 @@ main {
 
 .pending-hint {
     font-size: 14px;
-    color: #555;
+    color: var(--text-dim);
     margin-top: 8px;
 }
 
@@ -321,7 +328,7 @@ main {
     width: 44px;
     height: 44px;
     border: 3px solid rgba(255, 255, 255, 0.08);
-    border-top: 3px solid #e94560;
+    border-top: 3px solid var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -339,7 +346,7 @@ main {
     position: relative;
     width: 100%;
     padding-bottom: 56.25%;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
@@ -382,20 +389,20 @@ main {
 }
 
 .denied-container h2 {
-    color: #e94560;
+    color: var(--accent);
     font-size: 28px;
     margin-bottom: 12px;
 }
 
 .denied-video-title {
     font-size: 16px;
-    color: #888;
+    color: var(--text-muted);
     margin-bottom: 8px;
 }
 
 .denied-text {
     font-size: 16px;
-    color: #555;
+    color: var(--text-dim);
 }
 
 /* === Empty State === */
@@ -414,9 +421,9 @@ main {
     color: #666;
 }
 
-.empty-hint {
-    font-size: 15px !important;
-    color: #444 !important;
+.empty-state .empty-hint {
+    font-size: 15px;
+    color: #444;
     margin-top: 4px;
 }
 
@@ -425,9 +432,9 @@ main {
     display: inline-block;
     margin-top: 24px;
     padding: 12px 28px;
-    background: #1a1a3e;
+    background: var(--bg-card);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+    border-radius: var(--radius-btn);
     font-size: 15px;
     font-weight: 500;
     color: #aaa;
@@ -435,7 +442,7 @@ main {
 }
 
 .back-link:hover {
-    background: #1e1e45;
+    background: var(--bg-card-hover);
 }
 
 /* === Login Page === */
@@ -454,11 +461,11 @@ main {
 
 .login-form h2 {
     font-size: 24px;
-    color: #e0e0e0;
+    color: var(--text-primary);
 }
 
 .login-error {
-    color: #e94560;
+    color: var(--accent);
     font-size: 14px;
 }
 
@@ -469,10 +476,10 @@ main {
     letter-spacing: 8px;
     border: none;
     border-radius: 12px;
-    background: #1a1a3e;
-    color: #e0e0e0;
+    background: var(--bg-card);
+    color: var(--text-primary);
     outline: none;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
 }
 
 .pin-input:focus {
@@ -482,18 +489,6 @@ main {
 .login-button {
     padding: 14px;
     font-size: 17px;
-    font-weight: 600;
-    background: linear-gradient(135deg, #e94560 0%, #c73650 100%);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.15s, opacity 0.15s;
-}
-
-.login-button:active {
-    transform: scale(0.95);
-    opacity: 0.9;
 }
 
 /* === Time's Up Page === */
@@ -515,13 +510,13 @@ main {
 
 .timesup-text {
     font-size: 16px;
-    color: #888;
+    color: var(--text-muted);
     margin-bottom: 8px;
 }
 
 .timesup-subtext {
     font-size: 16px;
-    color: #555;
+    color: var(--text-dim);
 }
 
 /* === Schedule Banner (Index) === */
@@ -533,7 +528,7 @@ main {
     border-radius: 12px;
     margin-bottom: 12px;
     font-size: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
 }
 
 .schedule-closed {
@@ -572,13 +567,13 @@ main {
 
 .outsidehours-text {
     font-size: 16px;
-    color: #888;
+    color: var(--text-muted);
     margin-bottom: 8px;
 }
 
 .outsidehours-subtext {
     font-size: 16px;
-    color: #555;
+    color: var(--text-dim);
 }
 
 /* === Time Budget Bar (Index) === */
@@ -586,13 +581,13 @@ main {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #1a1a3e;
+    background: var(--bg-card);
     padding: 12px 18px;
     border-radius: 12px;
     margin-bottom: 24px;
     font-size: 15px;
     color: #aaa;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
 }
 
 .time-budget-low {
@@ -600,12 +595,12 @@ main {
 }
 
 .time-budget-low span:first-child {
-    color: #e94560;
+    color: var(--accent);
 }
 
 .time-budget-detail {
     font-size: 13px;
-    color: #555;
+    color: var(--text-dim);
 }
 
 /* === Time Remaining (Watch Page) === */
@@ -616,7 +611,7 @@ main {
 }
 
 .time-low {
-    color: #e94560;
+    color: var(--accent);
     font-weight: 600;
 }
 
@@ -627,7 +622,7 @@ main {
     left: 0;
     right: 0;
     background: rgba(240, 160, 48, 0.95);
-    color: #1a1a3e;
+    color: var(--bg-card);
     text-align: center;
     padding: 12px;
     font-size: 16px;
@@ -680,7 +675,7 @@ main {
 }
 
 .time-overlay-content p {
-    color: #888;
+    color: var(--text-muted);
     font-size: 18px;
 }
 
@@ -712,7 +707,7 @@ main {
 .sidebar-title {
     font-size: 13px;
     font-weight: 600;
-    color: #555;
+    color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 12px;
@@ -727,22 +722,22 @@ main {
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    background: #1a1a3e;
-    border-radius: 10px;
+    background: var(--bg-card);
+    border-radius: var(--radius-btn);
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-faint);
     transition: background 0.2s;
     user-select: none;
 }
 
 .channel-header:hover {
-    background: #1e1e45;
+    background: var(--bg-card-hover);
 }
 
 .channel-toggle {
     font-size: 14px;
     font-weight: 700;
-    color: #e94560;
+    color: var(--accent);
     width: 16px;
     text-align: center;
     flex-shrink: 0;
@@ -761,7 +756,7 @@ main {
 
 .channel-count {
     font-size: 12px;
-    color: #555;
+    color: var(--text-dim);
     background: rgba(255, 255, 255, 0.05);
     padding: 2px 7px;
     border-radius: 8px;
@@ -787,7 +782,7 @@ main {
 }
 
 .mini-card:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--border-faint);
 }
 
 .mini-thumb {
@@ -828,9 +823,9 @@ main {
     padding: 8px 14px;
     font-size: 13px;
     font-weight: 500;
-    background: #1a1a3e;
+    background: var(--bg-card);
     color: #aaa;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
     border-radius: 20px;
     cursor: pointer;
     white-space: nowrap;
@@ -838,18 +833,18 @@ main {
 }
 
 .channel-pill:hover {
-    background: #1e1e45;
+    background: var(--bg-card-hover);
 }
 
 .channel-pill.active {
     background: rgba(233, 69, 96, 0.15);
     border-color: rgba(233, 69, 96, 0.4);
-    color: #e94560;
+    color: var(--accent);
 }
 
 .pill-count {
     font-size: 11px;
-    color: #555;
+    color: var(--text-dim);
     margin-left: 4px;
 }
 
@@ -891,7 +886,7 @@ main {
     border-radius: 16px;
     overflow: hidden;
     margin-bottom: 24px;
-    background: #1a1a3e;
+    background: var(--bg-card);
 }
 
 .hero-slide {
@@ -958,7 +953,7 @@ main {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: #e94560;
+    color: var(--accent);
     margin-bottom: 8px;
 }
 
@@ -1022,7 +1017,7 @@ main {
 }
 
 .hero-dot.active {
-    background: #e94560;
+    background: var(--accent);
     width: 24px;
     border-radius: 4px;
     position: relative;
@@ -1093,7 +1088,7 @@ main {
 .page-btn {
     display: inline-block;
     padding: 10px 20px;
-    background: #1a1a3e;
+    background: var(--bg-card);
     border: 1px solid #333;
     border-radius: 8px;
     color: #7c8aff;
@@ -1104,7 +1099,7 @@ main {
     background: #252550;
 }
 .page-info {
-    color: #888;
+    color: var(--text-muted);
     font-size: 0.9rem;
 }
 
@@ -1119,23 +1114,12 @@ main {
 .show-more-btn {
     padding: 16px 64px;
     font-size: 17px;
-    font-weight: 600;
-    background: linear-gradient(135deg, #e94560 0%, #c73650 100%);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.15s, opacity 0.15s;
     width: 100%;
     max-width: 400px;
 }
 
 .show-more-btn:hover {
     opacity: 0.9;
-}
-
-.show-more-btn:active {
-    transform: scale(0.97);
 }
 
 .show-more-btn:disabled {
@@ -1166,13 +1150,13 @@ main {
     color: #777;
     padding: 6px 12px;
     border-radius: 8px;
-    background: #1a1a3e;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     transition: background 0.2s;
 }
 
 .back-link-small:hover {
-    background: #1e1e45;
+    background: var(--bg-card-hover);
 }
 
 .activity-summary {
@@ -1184,22 +1168,22 @@ main {
 .activity-stat {
     flex: 1;
     text-align: center;
-    background: #1a1a3e;
+    background: var(--bg-card);
     border-radius: 12px;
     padding: 16px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-faint);
 }
 
 .stat-value {
     display: block;
     font-size: 32px;
     font-weight: 700;
-    color: #e0e0e0;
+    color: var(--text-primary);
     line-height: 1;
 }
 
 .stat-low {
-    color: #e94560;
+    color: var(--accent);
 }
 
 .stat-label {
@@ -1213,7 +1197,7 @@ main {
 
 .activity-bar-wrap {
     height: 6px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-subtle);
     border-radius: 3px;
     margin-bottom: 24px;
     overflow: hidden;
@@ -1221,7 +1205,7 @@ main {
 
 .activity-bar {
     height: 100%;
-    background: linear-gradient(90deg, #4caf50 0%, #f0a030 60%, #e94560 100%);
+    background: linear-gradient(90deg, #4caf50 0%, #f0a030 60%, var(--accent) 100%);
     border-radius: 3px;
     transition: width 0.3s;
 }
@@ -1236,15 +1220,15 @@ main {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: #1a1a3e;
+    background: var(--bg-card);
     border-radius: 12px;
     padding: 10px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-faint);
     transition: background 0.2s;
 }
 
 .activity-row:hover {
-    background: #1e1e45;
+    background: var(--bg-card-hover);
 }
 
 .activity-thumb {
@@ -1264,7 +1248,7 @@ main {
     display: block;
     font-size: 14px;
     font-weight: 500;
-    color: #e0e0e0;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

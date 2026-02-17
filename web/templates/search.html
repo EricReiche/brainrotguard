@@ -20,14 +20,14 @@
             <form action="/request" method="POST" class="request-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="video_id" value="{{ result.video_id }}">
-                <button type="submit" class="request-button">Request</button>
+                <button type="submit" class="btn-primary request-button">Request</button>
             </form>
         </div>
         {% endfor %}
     </div>
     {% if results|length > 5 %}
     <div class="show-more-wrap" id="show-more-wrap">
-        <button class="show-more-btn" id="show-more-btn" type="button">Show More</button>
+        <button class="btn-primary show-more-btn" id="show-more-btn" type="button">Show More</button>
     </div>
     {% endif %}
     <script>
