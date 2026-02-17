@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.10.3 - Fix Homepage Channel Variety
+
+- Restored round-robin interleaving for homepage catalog
+- yt-dlp flat extraction returns no timestamps, so pure date sort was a no-op
+- First channel in dict iteration (BBC Earth) dominated the entire homepage
+- Round-robin picks one video from each channel in turn for balanced variety
+
 ## v1.10.2 - CSS Efficiency Improvements
 
 - Added CSS custom properties (`:root` block) with 12 design tokens for colors, borders, and radii
