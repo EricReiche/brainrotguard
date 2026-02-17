@@ -236,6 +236,27 @@ class BrainRotGuardBot:
             await query.answer("Video not found.")
             return
 
+        # Category toggle on approved videos (no status change)
+        if action in ("setcat_edu", "setcat_fun") and video["status"] == "approved":
+            cat = "edu" if action == "setcat_edu" else "fun"
+            self.video_store.set_video_category(video_id, cat)
+            cat_label = "Educational" if cat == "edu" else "Entertainment"
+            await query.answer(f"→ {cat_label}")
+            # Refresh buttons with updated toggle
+            toggle_cat = "edu" if cat == "fun" else "fun"
+            toggle_label = "→ Edu" if toggle_cat == "edu" else "→ Fun"
+            reply_markup = InlineKeyboardMarkup([[
+                InlineKeyboardButton("Revoke", callback_data=f"revoke:{video_id}"),
+                InlineKeyboardButton(toggle_label, callback_data=f"setcat_{toggle_cat}:{video_id}"),
+            ]])
+            try:
+                await query.edit_message_reply_markup(reply_markup=reply_markup)
+            except Exception:
+                pass
+            if self.on_video_change:
+                self.on_video_change()
+            return
+
         yt_link = f"https://www.youtube.com/watch?v={video_id}"
         duration = format_duration(video.get('duration'))
 
@@ -306,10 +327,15 @@ class BrainRotGuardBot:
             f"[Watch on YouTube]({yt_link})"
         )
 
-        # After approval, show Revoke button; otherwise remove all buttons
+        # After approval, show Revoke + category toggle; otherwise remove all buttons
         if status_label.startswith("APPROVED"):
+            video = self.video_store.get_video(video_id)
+            cur_cat = video.get("category", "fun") if video else "fun"
+            toggle_cat = "edu" if cur_cat == "fun" else "fun"
+            toggle_label = "→ Edu" if toggle_cat == "edu" else "→ Fun"
             reply_markup = InlineKeyboardMarkup([[
                 InlineKeyboardButton("Revoke", callback_data=f"revoke:{video_id}"),
+                InlineKeyboardButton(toggle_label, callback_data=f"setcat_{toggle_cat}:{video_id}"),
             ]])
         else:
             reply_markup = None
@@ -335,7 +361,8 @@ class BrainRotGuardBot:
             "`/logs [days|today]` - Activity report\n\n"
             "**Channel:**\n"
             "`/channel` - List all channels\n"
-            "`/channel allow @handle`\n"
+            "`/channel allow @handle [edu|fun]`\n"
+            "`/channel cat <name> edu|fun`\n"
             "`/channel unallow|block|unblock <name>`\n\n"
             "**Search:**\n"
             "`/search` - List word filters\n"
@@ -705,9 +732,11 @@ class BrainRotGuardBot:
             await self._channel_block(update, rest)
         elif sub == "unblock":
             await self._channel_unblock(update, rest)
+        elif sub == "cat":
+            await self._channel_set_cat(update, rest)
         else:
             await update.message.reply_text(
-                "Usage: /channel allow|unallow|block|unblock <name>"
+                "Usage: /channel allow|unallow|block|unblock|cat <name>"
             )
 
     async def _channel_allow(self, update: Update, args: list[str]) -> None:
@@ -777,6 +806,24 @@ class BrainRotGuardBot:
             await update.message.reply_text(f"Unblocked: {channel}")
         else:
             await update.message.reply_text(f"Not found: {channel}")
+
+    async def _channel_set_cat(self, update: Update, args: list[str]) -> None:
+        """Handle /channel cat <name> edu|fun."""
+        if len(args) < 2:
+            await update.message.reply_text("Usage: /channel cat <channel name> edu|fun")
+            return
+        cat = args[-1].lower()
+        if cat not in ("edu", "fun"):
+            await update.message.reply_text("Category must be `edu` or `fun`.")
+            return
+        channel = " ".join(args[:-1])
+        if self.video_store.set_channel_category(channel, cat):
+            cat_label = "Educational" if cat == "edu" else "Entertainment"
+            if self.on_channel_change:
+                self.on_channel_change()
+            await update.message.reply_text(f"**{channel}** → {cat_label}", parse_mode=MD2)
+        else:
+            await update.message.reply_text(f"Channel not found: {channel}")
 
     _CHANNEL_PAGE_SIZE = 10
 
