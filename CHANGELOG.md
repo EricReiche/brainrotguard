@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10.2 - CSS Efficiency Improvements
+
+- Added CSS custom properties (`:root` block) with 12 design tokens for colors, borders, and radii
+- Replaced ~50 hardcoded color/radius values with `var()` references throughout `style.css`
+- Extracted shared `.btn-primary` class from 4 duplicate gradient button selectors (search, request, login, show more)
+- Fixed `.empty-hint` specificity: changed selector to `.empty-state .empty-hint`, removed `!important`
+- Net reduction of 16 lines in `style.css`
+
 ## v1.10.1 - Screenshot & Demo Refresh
 
 - Updated all device screenshots for new UI (swipe hero, search in header)
