@@ -177,6 +177,7 @@ def _fetch_from_channel_page(channel_id: str, channel_name: str, max_results: in
                     'channel_name': resolved_name,
                     'thumbnail_url': entry.get('thumbnail') or f"https://i.ytimg.com/vi/{vid_id}/hqdefault.jpg",
                     'duration': entry.get('duration'),
+                    'timestamp': entry.get('timestamp'),
                 })
             return videos
     except Exception as e:
@@ -224,6 +225,7 @@ async def fetch_channel_videos(channel_name: str, max_results: int = 10, channel
                         'channel_name': entry_channel,
                         'thumbnail_url': entry.get('thumbnail') or f"https://i.ytimg.com/vi/{vid_id}/hqdefault.jpg",
                         'duration': entry.get('duration'),
+                        'timestamp': entry.get('timestamp'),
                         })
                     if len(videos) >= max_results:
                         break
