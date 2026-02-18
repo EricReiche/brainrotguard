@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.11.4 - Channel Handle Support in Commands
+
+- `/channel cat` now accepts @handle (resolves to display name for lookup)
+- `/channel` list shows @handle next to each channel name for easy reference
+- Added `resolve_channel_name()` for handle-to-name resolution in VideoStore
+
+## v1.11.3 - Channel Block Fix + Search Query Filter
+
 ## v1.11.3 - Channel Block Fix + Search Query Filter
 
 - Fixed `/channel block @handle` not resolving handle to display name (blocked channels weren't filtered from search results)
