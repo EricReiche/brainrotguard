@@ -14,7 +14,7 @@ from telegram.ext import (
     MessageHandler, filters,
 )
 
-from utils import get_today_str, parse_time_input, format_time_12h, is_within_schedule
+from utils import get_today_str, get_day_utc_bounds, parse_time_input, format_time_12h, is_within_schedule
 from youtube.extractor import format_duration
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class BrainRotGuardBot:
         self.video_store = video_store
         self.config = config
         self._app = None
-        self._limit_notified_today = None  # date string of last limit notification
+        self._limit_notified_cats: dict[str, str] = {}  # category -> date string of last limit notification
         self.on_channel_change = None  # callback when channel lists change
         self.on_video_change = None  # callback when video status changes
 
@@ -118,11 +118,17 @@ class BrainRotGuardBot:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("Watch on YouTube", url=yt_link)],
             [
-                InlineKeyboardButton("Approve", callback_data=f"approve:{video_id}"),
+                InlineKeyboardButton("Approve (Edu)", callback_data=f"approve_edu:{video_id}"),
+                InlineKeyboardButton("Approve (Fun)", callback_data=f"approve_fun:{video_id}"),
+            ],
+            [
                 InlineKeyboardButton("Deny", callback_data=f"deny:{video_id}"),
             ],
             [
-                InlineKeyboardButton("Allow Channel", callback_data=f"allowchan:{video_id}"),
+                InlineKeyboardButton("Allow Ch (Edu)", callback_data=f"allowchan_edu:{video_id}"),
+                InlineKeyboardButton("Allow Ch (Fun)", callback_data=f"allowchan_fun:{video_id}"),
+            ],
+            [
                 InlineKeyboardButton("Block Channel", callback_data=f"blockchan:{video_id}"),
             ],
         ])
@@ -230,13 +236,42 @@ class BrainRotGuardBot:
             await query.answer("Video not found.")
             return
 
+        # Category toggle on approved videos (no status change)
+        if action in ("setcat_edu", "setcat_fun") and video["status"] == "approved":
+            cat = "edu" if action == "setcat_edu" else "fun"
+            self.video_store.set_video_category(video_id, cat)
+            cat_label = "Educational" if cat == "edu" else "Entertainment"
+            await query.answer(f"→ {cat_label}")
+            # Refresh buttons with updated toggle
+            toggle_cat = "edu" if cat == "fun" else "fun"
+            toggle_label = "→ Edu" if toggle_cat == "edu" else "→ Fun"
+            reply_markup = InlineKeyboardMarkup([[
+                InlineKeyboardButton("Revoke", callback_data=f"revoke:{video_id}"),
+                InlineKeyboardButton(toggle_label, callback_data=f"setcat_{toggle_cat}:{video_id}"),
+            ]])
+            try:
+                await query.edit_message_reply_markup(reply_markup=reply_markup)
+            except Exception:
+                pass
+            if self.on_video_change:
+                self.on_video_change()
+            return
+
         yt_link = f"https://www.youtube.com/watch?v={video_id}"
         duration = format_duration(video.get('duration'))
 
         if action == "approve" and video['status'] == 'pending':
             self.video_store.update_status(video_id, "approved")
+            self.video_store.set_video_category(video_id, "fun")
             await query.answer("Approved!")
             status_label = "APPROVED"
+        elif action in ("approve_edu", "approve_fun") and video['status'] == 'pending':
+            cat = "edu" if action == "approve_edu" else "fun"
+            self.video_store.update_status(video_id, "approved")
+            self.video_store.set_video_category(video_id, cat)
+            cat_label = "Educational" if cat == "edu" else "Entertainment"
+            await query.answer(f"Approved ({cat_label})!")
+            status_label = f"APPROVED ({cat_label})"
         elif action == "deny" and video['status'] == 'pending':
             self.video_store.update_status(video_id, "denied")
             await query.answer("Denied.")
@@ -250,8 +285,21 @@ class BrainRotGuardBot:
             self.video_store.add_channel(channel, "allowed", channel_id=video.get('channel_id'))
             if video['status'] == 'pending':
                 self.video_store.update_status(video_id, "approved")
+                self.video_store.set_video_category(video_id, "fun")
             await query.answer(f"Allowlisted: {channel}")
             status_label = "APPROVED + CHANNEL ALLOWED"
+            if self.on_channel_change:
+                self.on_channel_change()
+        elif action in ("allowchan_edu", "allowchan_fun"):
+            cat = "edu" if action == "allowchan_edu" else "fun"
+            channel = video['channel_name']
+            self.video_store.add_channel(channel, "allowed", channel_id=video.get('channel_id'), category=cat)
+            if video['status'] == 'pending':
+                self.video_store.update_status(video_id, "approved")
+                self.video_store.set_video_category(video_id, cat)
+            cat_label = "Educational" if cat == "edu" else "Entertainment"
+            await query.answer(f"Allowlisted ({cat_label}): {channel}")
+            status_label = f"APPROVED + CHANNEL ALLOWED ({cat_label})"
             if self.on_channel_change:
                 self.on_channel_change()
         elif action == "blockchan":
@@ -279,10 +327,15 @@ class BrainRotGuardBot:
             f"[Watch on YouTube]({yt_link})"
         )
 
-        # After approval, show Revoke button; otherwise remove all buttons
-        if status_label == "APPROVED":
+        # After approval, show Revoke + category toggle; otherwise remove all buttons
+        if status_label.startswith("APPROVED"):
+            video = self.video_store.get_video(video_id)
+            cur_cat = video.get("category", "fun") if video else "fun"
+            toggle_cat = "edu" if cur_cat == "fun" else "fun"
+            toggle_label = "→ Edu" if toggle_cat == "edu" else "→ Fun"
             reply_markup = InlineKeyboardMarkup([[
                 InlineKeyboardButton("Revoke", callback_data=f"revoke:{video_id}"),
+                InlineKeyboardButton(toggle_label, callback_data=f"setcat_{toggle_cat}:{video_id}"),
             ]])
         else:
             reply_markup = None
@@ -308,7 +361,8 @@ class BrainRotGuardBot:
             "`/logs [days|today]` - Activity report\n\n"
             "**Channel:**\n"
             "`/channel` - List all channels\n"
-            "`/channel allow @handle`\n"
+            "`/channel allow @handle [edu|fun]`\n"
+            "`/channel cat <name> edu|fun`\n"
             "`/channel unallow|block|unblock <name>`\n\n"
             "**Search:**\n"
             "`/search` - List word filters\n"
@@ -317,6 +371,7 @@ class BrainRotGuardBot:
             "`/time [min|off]` - Watch limit\n"
             "`/time add <min>` - Bonus for today\n"
             "`/time start|stop [time|off]` - Schedule\n"
+            "`/time edu|fun <min|off>` - Category limits\n"
             "`/changelog` - Latest changes"
         ), parse_mode=MD2)
 
@@ -518,7 +573,8 @@ class BrainRotGuardBot:
                 limit_min = self.config.watch_limits.daily_limit_minutes
             else:
                 limit_min = int(limit_str) if limit_str else 120
-            used = self.video_store.get_daily_watch_minutes(today)
+            bounds = get_day_utc_bounds(today, self._get_tz())
+            used = self.video_store.get_daily_watch_minutes(today, utc_bounds=bounds)
 
             bonus = 0
             bonus_date = self.video_store.get_setting("daily_bonus_date", "")
@@ -541,7 +597,7 @@ class BrainRotGuardBot:
 
         # Per-day breakdown
         for date_str in dates:
-            breakdown = self.video_store.get_daily_watch_breakdown(date_str)
+            breakdown = self.video_store.get_daily_watch_breakdown(date_str, utc_bounds=get_day_utc_bounds(date_str, self._get_tz()))
             if not breakdown:
                 if len(dates) == 1:
                     lines.append("_No videos watched._")
@@ -551,19 +607,39 @@ class BrainRotGuardBot:
                 total_day = sum(v['minutes'] for v in breakdown)
                 lines.append(f"**{date_str}** \u2014 {int(total_day)} min total")
 
+            # Group by category (uncategorized treated as fun)
+            by_cat: dict = {}
             for v in breakdown:
-                title = v['title'][:40]
-                ch_link = _channel_md_link(v['channel_name'], v.get('channel_id'))
-                watched_min = int(v['minutes'])
-                vid_dur = v.get('duration')
-                if vid_dur and vid_dur > 0:
-                    dur_min = vid_dur // 60
-                    pct = min(100, int(v['minutes'] / (vid_dur / 60) * 100)) if vid_dur > 0 else 0
-                    lines.append(f"\u2022 **{title}**")
-                    lines.append(f"  {ch_link} \u00b7 {watched_min}m / {dur_min}m ({pct}%)")
+                cat = v.get('category') or 'fun'
+                by_cat.setdefault(cat, []).append(v)
+
+            for cat, cat_label in [("edu", "Educational"), ("fun", "Entertainment")]:
+                vids = by_cat.get(cat, [])
+                if not vids:
+                    continue
+                cat_total = sum(v['minutes'] for v in vids)
+                cat_limit_str = self.video_store.get_setting(f"{cat}_limit_minutes", "")
+                cat_limit = int(cat_limit_str) if cat_limit_str else 0
+                if cat_limit > 0:
+                    lines.append(f"\n**{cat_label}** \u2014 {int(cat_total)}/{cat_limit} min")
+                    pct = min(1.0, cat_total / cat_limit) if cat_limit > 0 else 0
+                    lines.append(f"`{self._progress_bar(pct)}` {int(pct * 100)}%")
                 else:
-                    lines.append(f"\u2022 **{title}**")
-                    lines.append(f"  {ch_link} \u00b7 {watched_min}m watched")
+                    lines.append(f"\n**{cat_label}** \u2014 {int(cat_total)} min (no limit)")
+
+                for v in vids:
+                    title = v['title'][:40]
+                    ch_link = _channel_md_link(v['channel_name'], v.get('channel_id'))
+                    watched_min = int(v['minutes'])
+                    vid_dur = v.get('duration')
+                    if vid_dur and vid_dur > 0:
+                        dur_min = vid_dur // 60
+                        pct = min(100, int(v['minutes'] / (vid_dur / 60) * 100)) if vid_dur > 0 else 0
+                        lines.append(f"\u2022 **{title}**")
+                        lines.append(f"  {ch_link} \u00b7 {watched_min}m / {dur_min}m ({pct}%)")
+                    else:
+                        lines.append(f"\u2022 **{title}**")
+                        lines.append(f"  {ch_link} \u00b7 {watched_min}m watched")
 
             if len(dates) > 1:
                 lines.append("")
@@ -614,22 +690,25 @@ class BrainRotGuardBot:
         """Return the configured timezone string (or empty for UTC)."""
         return self.config.watch_limits.timezone if self.config else ""
 
-    async def notify_time_limit_reached(self, used_min: float, limit_min: int) -> None:
-        """Send notification when daily time limit is reached (once per day)."""
+    async def notify_time_limit_reached(self, used_min: float, limit_min: int, category: str = "") -> None:
+        """Send notification when daily time limit is reached (once per day per category)."""
         if not self._app:
             return
         today = get_today_str(self._get_tz())
-        if self._limit_notified_today == today:
+        if self._limit_notified_cats.get(category) == today:
             return
-        self._limit_notified_today = today
+        self._limit_notified_cats[category] = today
+        cat_label = {"edu": "Educational", "fun": "Entertainment"}.get(category, "")
+        cat_text = f" ({cat_label})" if cat_label else ""
+        text = _md(
+            f"**Daily watch limit reached{cat_text}**\n\n"
+            f"**Used:** {int(used_min)} min / {limit_min} min limit\n"
+            f"{'Videos in this category are' if cat_label else 'Videos are'} blocked until tomorrow."
+        )
         try:
             await self._app.bot.send_message(
                 chat_id=self.admin_chat_id,
-                text=_md(
-                    f"**Daily watch limit reached**\n\n"
-                    f"**Used:** {int(used_min)} min / {limit_min} min limit\n"
-                    f"Videos are blocked until tomorrow."
-                ),
+                text=text,
                 parse_mode=MD2,
             )
         except Exception as e:
@@ -654,9 +733,11 @@ class BrainRotGuardBot:
             await self._channel_block(update, rest)
         elif sub == "unblock":
             await self._channel_unblock(update, rest)
+        elif sub == "cat":
+            await self._channel_set_cat(update, rest)
         else:
             await update.message.reply_text(
-                "Usage: /channel allow|unallow|block|unblock <name>"
+                "Usage: /channel allow|unallow|block|unblock|cat <name>"
             )
 
     async def _channel_allow(self, update: Update, args: list[str]) -> None:
@@ -679,13 +760,18 @@ class BrainRotGuardBot:
         channel_name = info["channel_name"]
         channel_id = info.get("channel_id")
         handle = info.get("handle")
-        self.video_store.add_channel(channel_name, "allowed", channel_id=channel_id, handle=handle)
+        cat = None
+        if len(args) > 1 and args[1].lower() in ("edu", "fun"):
+            cat = args[1].lower()
+        self.video_store.add_channel(channel_name, "allowed", channel_id=channel_id, handle=handle, category=cat)
         if self.on_channel_change:
             self.on_channel_change()
+        cat_label = {"edu": "Educational", "fun": "Entertainment"}.get(cat, "No category")
         await update.message.reply_text(
             f"Allowlisted: {channel_name}\n"
             f"Handle: {raw}\n"
-            f"Channel ID: {channel_id or 'unknown'}"
+            f"Channel ID: {channel_id or 'unknown'}\n"
+            f"Category: {cat_label}"
         )
 
     async def _channel_unallow(self, update: Update, args: list[str]) -> None:
@@ -722,6 +808,25 @@ class BrainRotGuardBot:
         else:
             await update.message.reply_text(f"Not found: {channel}")
 
+    async def _channel_set_cat(self, update: Update, args: list[str]) -> None:
+        """Handle /channel cat <name> edu|fun."""
+        if len(args) < 2:
+            await update.message.reply_text("Usage: /channel cat <channel name> edu|fun")
+            return
+        cat = args[-1].lower()
+        if cat not in ("edu", "fun"):
+            await update.message.reply_text("Category must be `edu` or `fun`.")
+            return
+        channel = " ".join(args[:-1])
+        if self.video_store.set_channel_category(channel, cat):
+            self.video_store.set_channel_videos_category(channel, cat)
+            cat_label = "Educational" if cat == "edu" else "Entertainment"
+            if self.on_channel_change:
+                self.on_channel_change()
+            await update.message.reply_text(f"**{channel}** → {cat_label}", parse_mode=MD2)
+        else:
+            await update.message.reply_text(f"Channel not found: {channel}")
+
     _CHANNEL_PAGE_SIZE = 10
 
     def _render_channel_page(self, page: int = 0) -> tuple[str, InlineKeyboardMarkup | None]:
@@ -731,9 +836,9 @@ class BrainRotGuardBot:
         if not allowed and not blocked:
             return "No channels configured.", None
 
-        # Build flat list: (channel_name, channel_id, handle, status)
-        entries = [(ch, cid, h, "allowed") for ch, cid, h in allowed]
-        entries += [(ch, cid, h, "blocked") for ch, cid, h in blocked]
+        # Build flat list: (channel_name, channel_id, handle, category, status)
+        entries = [(ch, cid, h, cat, "allowed") for ch, cid, h, cat in allowed]
+        entries += [(ch, cid, h, cat, "blocked") for ch, cid, h, cat in blocked]
         total = len(entries)
         page_size = self._CHANNEL_PAGE_SIZE
         start = page * page_size
@@ -742,15 +847,16 @@ class BrainRotGuardBot:
 
         lines = [f"**Channels** ({total} total)\n"]
         buttons = []
-        for ch, cid, handle, status in page_entries:
+        for ch, cid, handle, cat, status in page_entries:
             label = "allowed" if status == "allowed" else "blocked"
+            cat_tag = f" [{cat}]" if cat else ""
             if cid:
                 url = f"https://www.youtube.com/channel/{cid}"
             elif handle:
                 url = f"https://www.youtube.com/{handle}"
             else:
                 url = f"https://www.youtube.com/results?search_query={quote(ch)}"
-            lines.append(f"  [{ch}]({url}) *{label}*")
+            lines.append(f"  [{ch}]({url}) *{label}{cat_tag}*")
             btn_label = f"Unallow: {ch}" if status == "allowed" else f"Unblock: {ch}"
             btn_action = "unallow" if status == "allowed" else "unblock"
             buttons.append([InlineKeyboardButton(
@@ -1001,6 +1107,15 @@ class BrainRotGuardBot:
                 await self._time_add_bonus(update, context.args[1:])
                 return
 
+            # /time edu <minutes|off> — set educational category limit
+            if arg == "edu":
+                await self._time_set_category_limit(update, context.args[1:], "edu")
+                return
+            # /time fun <minutes|off> — set entertainment category limit
+            if arg == "fun":
+                await self._time_set_category_limit(update, context.args[1:], "fun")
+                return
+
             if arg == "off":
                 self.video_store.set_setting("daily_limit_minutes", "0")
                 await update.message.reply_text("Watch time limit disabled.")
@@ -1015,7 +1130,8 @@ class BrainRotGuardBot:
                     "Usage: /time [minutes|off]\n"
                     "       /time start <time|off>\n"
                     "       /time stop <time|off>\n"
-                    "       /time add <minutes>"
+                    "       /time add <minutes>\n"
+                    "       /time edu|fun <minutes|off>"
                 )
                 return
 
@@ -1026,7 +1142,8 @@ class BrainRotGuardBot:
         else:
             limit_min = int(limit_str) if limit_str else 120
         today = get_today_str(self._get_tz())
-        used = self.video_store.get_daily_watch_minutes(today)
+        bounds = get_day_utc_bounds(today, self._get_tz())
+        used = self.video_store.get_daily_watch_minutes(today, utc_bounds=bounds)
 
         # Check for today's bonus
         bonus = 0
@@ -1046,6 +1163,23 @@ class BrainRotGuardBot:
                 lines.append(f"**Bonus today:** +{bonus} min")
             lines.append(f"**Used today:** {int(used)} min")
             lines.append(f"**Remaining:** {int(remaining)} min")
+
+        # Per-category limits
+        cat_usage = self.video_store.get_daily_watch_by_category(today, utc_bounds=bounds)
+        for cat, cat_label in [("edu", "Educational"), ("fun", "Entertainment")]:
+            cat_limit_str = self.video_store.get_setting(f"{cat}_limit_minutes", "")
+            cat_limit = int(cat_limit_str) if cat_limit_str else 0
+            cat_used = cat_usage.get(cat, 0.0)
+            # Include uncategorized in fun
+            if cat == "fun":
+                cat_used += cat_usage.get(None, 0.0)
+            if cat_limit == 0:
+                lines.append(f"\n**{cat_label}:** {int(cat_used)} min watched (no limit)")
+            else:
+                cat_remaining = max(0, cat_limit - cat_used)
+                lines.append(f"\n**{cat_label}:** {int(cat_used)}/{cat_limit} min")
+                pct = min(1.0, cat_used / cat_limit) if cat_limit > 0 else 0
+                lines.append(f"`{self._progress_bar(pct)}` {int(pct * 100)}%")
 
         # Schedule info
         sched_start = self.video_store.get_setting("schedule_start", "")
@@ -1087,6 +1221,30 @@ class BrainRotGuardBot:
         await update.message.reply_text(
             f"Added {add_min} bonus minutes for today (+{new_bonus} total)."
         )
+
+    async def _time_set_category_limit(self, update: Update, args: list[str], category: str) -> None:
+        """Handle /time edu|fun <minutes|off>."""
+        cat_label = "Educational" if category == "edu" else "Entertainment"
+        setting_key = f"{category}_limit_minutes"
+        if not args:
+            current = self.video_store.get_setting(setting_key, "")
+            limit = int(current) if current else 0
+            if limit == 0:
+                await update.message.reply_text(f"{cat_label} limit: OFF (unlimited)")
+            else:
+                await update.message.reply_text(f"{cat_label} limit: {limit} minutes/day")
+            return
+        value = args[0].lower()
+        if value in ("off", "0"):
+            self.video_store.set_setting(setting_key, "0")
+            await update.message.reply_text(f"{cat_label} limit disabled (unlimited).")
+            return
+        if value.isdigit():
+            minutes = int(value)
+            self.video_store.set_setting(setting_key, str(minutes))
+            await update.message.reply_text(f"{cat_label} limit set to {minutes} minutes/day.")
+            return
+        await update.message.reply_text(f"Usage: /time {category} <minutes|off>")
 
     async def _time_schedule(
         self, update: Update, args: list[str], setting_key: str,

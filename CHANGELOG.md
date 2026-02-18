@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.11.2 - Timezone Fix + Category Cache + Activity Link
+
+- Fixed watch time queries using wrong timezone boundaries (UTC timestamps queried with local date, causing time to reset on redeploy)
+- Added `get_day_utc_bounds()` to convert local dates to UTC ranges for all watch time queries
+- Fixed channel category changes not persisting in video cache (always re-apply current channel category)
+- Added clock icon linking to activity page from category cards row
+- Category cards: progress bar visibility fix, desktop width cap, layout refinements
+
+## v1.11.1 - Category Filter Cards + Desktop Scrollbar Fix
+
+- Redesigned category filter from pills to compact horizontal cards
+- Cards show category name, time remaining (large), and progress bar
+- Unlimited categories display "Unlimited" label without progress bar
+- Exhausted categories show "time's up" with dimmed state
+- Fixed channel pill scrollbar hidden on desktop (now shows thin scrollbar on mouse devices, hidden on touch)
+
+## v1.11.0 - Edu/Fun Category Time Limits
+
+- Two fixed categories: edu (educational) and fun (entertainment)
+- Per-category daily time limits via `/time edu|fun <min|off>`
+- Approve buttons split into "Approve (Edu)" / "Approve (Fun)"
+- Allow Channel buttons split into "Allow Ch (Edu)" / "Allow Ch (Fun)"
+- `/channel allow @handle edu|fun` sets category on allowlist
+- Homepage: category filter pills with remaining-time badges
+- Video thumbnails: edu (green) / fun (orange) category badges
+- Watch page: category-specific countdown ("Entertainment: 12 min left")
+- Time's up page: shows which category is exceeded + links to browse other category
+- Activity page: per-category grouped breakdown with progress bars
+- `/watch` and `/time` commands show per-category usage
+- Bonus minutes (`/time add`) apply to both categories equally
+- Uncategorized videos default to "fun"
+
 ## v1.10.3 - Fix Homepage Channel Variety
 
 - Restored round-robin interleaving for homepage catalog
