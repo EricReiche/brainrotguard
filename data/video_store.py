@@ -99,12 +99,17 @@ class VideoStore:
         """)
         self.conn.commit()
 
+    _ALLOWED_TABLES = {"channels", "videos", "watch_log", "settings", "search_log", "word_filters"}
+    _ALLOWED_COLUMNS = {"channel_id", "handle", "category"}
+
     def _add_column_if_missing(self, table: str, column: str, col_type: str) -> None:
         """Add a column to a table if it doesn't already exist (migration helper)."""
-        cursor = self.conn.execute(f"PRAGMA table_info({table})")
+        if table not in self._ALLOWED_TABLES or column not in self._ALLOWED_COLUMNS:
+            raise ValueError(f"Disallowed migration target: {table}.{column}")
+        cursor = self.conn.execute(f'PRAGMA table_info("{table}")')
         columns = {row[1] for row in cursor.fetchall()}
         if column not in columns:
-            self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+            self.conn.execute(f'ALTER TABLE "{table}" ADD COLUMN "{column}" {col_type}')
             self.conn.commit()
 
     def add_video(
@@ -308,6 +313,16 @@ class VideoStore:
             )
             self.conn.commit()
             return cursor.rowcount > 0
+
+    def set_channel_videos_category(self, channel_name: str, category: str) -> int:
+        """Update category on all videos belonging to a channel. Returns count updated."""
+        with self._lock:
+            cursor = self.conn.execute(
+                "UPDATE videos SET category = ? WHERE channel_name = ? COLLATE NOCASE",
+                (category, channel_name),
+            )
+            self.conn.commit()
+            return cursor.rowcount
 
     def get_channel_category(self, channel_name: str) -> Optional[str]:
         """Get a channel's assigned category."""

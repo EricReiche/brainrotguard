@@ -48,7 +48,8 @@ def get_day_utc_bounds(date_str: str, tz_name: str = "") -> tuple[str, str]:
                     end_utc.strftime("%Y-%m-%d %H:%M:%S"))
         except Exception:
             logger.warning("Invalid timezone %r for day bounds, using date as-is", tz_name)
-    return (date_str, f"{date_str} 23:59:59")
+    next_day = (local_date + timedelta(days=1)).strftime("%Y-%m-%d")
+    return (date_str, next_day)
 
 
 def parse_time_input(raw: str) -> str | None:

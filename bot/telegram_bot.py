@@ -819,6 +819,7 @@ class BrainRotGuardBot:
             return
         channel = " ".join(args[:-1])
         if self.video_store.set_channel_category(channel, cat):
+            self.video_store.set_channel_videos_category(channel, cat)
             cat_label = "Educational" if cat == "edu" else "Entertainment"
             if self.on_channel_change:
                 self.on_channel_change()
