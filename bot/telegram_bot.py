@@ -788,13 +788,28 @@ class BrainRotGuardBot:
 
     async def _channel_block(self, update: Update, args: list[str]) -> None:
         if not args:
-            await update.message.reply_text("Usage: /channel block <channel name>")
+            await update.message.reply_text("Usage: /channel block @handle\nExample: /channel block @Slurry")
             return
-        channel = " ".join(args)
-        self.video_store.add_channel(channel, "blocked")
+        raw = args[0]
+        if not raw.startswith("@"):
+            await update.message.reply_text(
+                "Please use the channel's @handle (e.g. @Slurry).\n"
+                "You can find it on the channel's YouTube page."
+            )
+            return
+        await update.message.reply_text(f"Resolving {raw}...")
+        from youtube.extractor import resolve_channel_handle
+        info = await resolve_channel_handle(raw)
+        if not info or not info.get("channel_name"):
+            await update.message.reply_text(f"Could not find a YouTube channel for {raw}")
+            return
+        channel_name = info["channel_name"]
+        channel_id = info.get("channel_id")
+        handle = info.get("handle")
+        self.video_store.add_channel(channel_name, "blocked", channel_id=channel_id, handle=handle)
         if self.on_channel_change:
             self.on_channel_change()
-        await update.message.reply_text(f"Blocked: {channel}")
+        await update.message.reply_text(f"Blocked: {channel_name}")
 
     async def _channel_unblock(self, update: Update, args: list[str]) -> None:
         if not args:

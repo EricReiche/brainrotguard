@@ -597,6 +597,25 @@ async def search_videos(request: Request, q: str = Query("", max_length=200)):
     if not q:
         return RedirectResponse(url="/", status_code=303)
 
+    # Block search queries that contain filtered words
+    filtered_words = video_store.get_word_filters_set()
+    if filtered_words:
+        word_patterns = [
+            re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE)
+            for w in filtered_words
+        ]
+        if any(p.search(q) for p in word_patterns):
+            video_store.record_search(q, 0)
+            csrf_token = _get_csrf_token(request)
+            return templates.TemplateResponse("search.html", {
+                "request": request,
+                "results": [],
+                "query": q,
+                "csrf_token": csrf_token,
+            })
+    else:
+        word_patterns = []
+
     video_id = extract_video_id(q)
 
     if video_id:
@@ -612,12 +631,7 @@ async def search_videos(request: Request, q: str = Query("", max_length=200)):
         results = [r for r in results if r.get('channel_name', '').lower() not in blocked]
 
     # Filter out videos with blocked words in title (word-boundary match)
-    filtered_words = video_store.get_word_filters_set()
-    if filtered_words:
-        word_patterns = [
-            re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE)
-            for w in filtered_words
-        ]
+    if word_patterns:
         results = [
             r for r in results
             if not any(p.search(r.get('title', '')) for p in word_patterns)
