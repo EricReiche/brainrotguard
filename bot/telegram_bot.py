@@ -395,7 +395,8 @@ class BrainRotGuardBot:
             "`/time add <min>` - Bonus for today\n"
             "`/time start|stop [time|off]` - Schedule\n"
             "`/time edu|fun <min|off>` - Category limits\n"
-            "`/changelog` - Latest changes"
+            "`/changelog` - Latest changes\n\n"
+            "☕ [Buy me a coffee](https://ko-fi.com/coffee4jj)"
         ), parse_mode=MD2)
 
     _PENDING_PAGE_SIZE = 5

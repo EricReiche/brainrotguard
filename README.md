@@ -280,6 +280,10 @@ youtube/extractor.py   # yt-dlp wrapper: search + metadata extraction
 deploy.sh              # Deployment script for remote servers
 ```
 
+## Support
+
+If you find BrainRotGuard useful, consider [buying me a coffee](https://ko-fi.com/coffee4jj).
+
 ## License
 
 [MIT](LICENSE) — use it however you want.

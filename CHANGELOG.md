@@ -19,6 +19,11 @@ These won't cause errors on upgrade, but you may notice different behavior:
 
 ---
 
+## v1.11.8 - Version Tag & Ko-fi Link
+- Version badge below logo in web header, links to GitHub changelog
+- Ko-fi "Buy me a coffee" link in web footer and Telegram `/help`
+- Ko-fi support section in README
+
 ## v1.11.7 - Security Headers & Efficiency Fixes
 - Security headers middleware: CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy
 - PIN auth tightened: `/api/catalog` and `/api/watch-heartbeat` now require session auth (only status polling and YT script proxies exempt)
