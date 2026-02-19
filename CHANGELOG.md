@@ -1,4 +1,13 @@
 # Changelog
+## v1.11.7 - Security Headers & Efficiency Fixes
+- Security headers middleware: CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy
+- PIN auth tightened: `/api/catalog` and `/api/watch-heartbeat` now require session auth (only status polling and YT script proxies exempt)
+- Thumbnail URL validation at both extractor and storage layers against YouTube CDN hostname allowlist (SSRF prevention)
+- Fix `_last_heartbeat` dict unbounded memory growth with periodic eviction of stale entries
+- SQL pagination for `/approved` bot command (no longer loads full table into memory)
+- Fix `_build_catalog` mutating shared channel cache dicts (copy on use)
+- Extract `resolve_handle_from_channel_id()` to `extractor.py` (eliminates duplicate code in bot + main)
+
 ## v1.11.6 - Fix Mobile Horizontal Scroll on Category Cards
 - Added `overflow-x: hidden` to body and main to prevent horizontal scroll on mobile
 - Category card labels truncate with ellipsis on narrow screens
