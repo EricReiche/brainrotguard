@@ -2,25 +2,26 @@
 
 ## Upgrading
 
-### From v1.11.2 or earlier to v1.11.7
+Upgrades are seamless — rebuild and restart with no manual steps:
+```
+docker compose down && docker compose build && docker compose up -d
+```
+Database schema changes (if any) are applied automatically on startup. Existing data is preserved.
 
-**No SQL schema migration required.** The `handle` column on the `channels` table is added automatically via `_add_column_if_missing()` on startup. Existing data is preserved.
+### v1.11.3–v1.11.7 behavioral notes
 
-**Behavioral changes to be aware of:**
+These won't cause errors on upgrade, but you may notice different behavior:
 
-1. **`/channel block` now requires `@handle` format** (v1.11.3). Previously accepted free-text channel names (`/channel block Some Channel`), now requires `@handle` (`/channel block @SomeChannel`). This matches `/channel allow` behavior and ensures reliable blocking via yt-dlp resolution. If you have scripts or workflows that call `/channel block` with display names, update them to use `@handle` format.
-
-2. **API auth tightened** (v1.11.7). `/api/catalog` now requires a valid PIN session. Previously all `/api/*` paths except `/api/watch-heartbeat` were accessible without auth. If you have external tools polling `/api/catalog`, they will now receive a 401 response unless authenticated. The web UI handles this transparently (it already has a PIN session from login).
-
-3. **CSP headers added** (v1.11.7). A `Content-Security-Policy` header is now set on all responses. If you serve BrainRotGuard behind a reverse proxy that sets its own CSP, the headers may conflict. The app's CSP allows: `self` for scripts/styles/connections, YouTube CDN for images, `youtube-nocookie.com` for iframes, `googlevideo.com` for media.
-
-4. **Search word filters now block queries** (v1.11.3). Previously, filtered words only removed matching results from search output. Now, if the search query itself contains a filtered word, zero results are returned immediately. This is stricter — no partial results leak through.
+- **`/channel block` syntax changed** (v1.11.3): Now requires `@handle` format (`/channel block @SomeChannel`) instead of free-text names. Existing blocked channels in the DB are unaffected. You'll get a usage hint if you use the old format.
+- **`/api/catalog` now requires PIN session** (v1.11.7): The web UI handles this transparently (already authenticated via login). Only affects external scripts hitting the endpoint directly — they'll get a 401.
+- **Search word filters are stricter** (v1.11.3): Queries containing filtered words now return zero results immediately, instead of only filtering matching titles from results.
+- **CSP headers added** (v1.11.7): May need attention if you run behind a reverse proxy that sets its own CSP.
 
 ---
 
 ## v1.11.7 - Security Headers & Efficiency Fixes
 - Security headers middleware: CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy
-- **Breaking:** PIN auth tightened — `/api/catalog` and `/api/watch-heartbeat` now require session auth (only status polling and YT script proxies exempt)
+- PIN auth tightened: `/api/catalog` and `/api/watch-heartbeat` now require session auth (only status polling and YT script proxies exempt)
 - Thumbnail URL validation at both extractor and storage layers against YouTube CDN hostname allowlist (SSRF prevention)
 - Fix `_last_heartbeat` dict unbounded memory growth with periodic eviction of stale entries
 - SQL pagination for `/approved` bot command (no longer loads full table into memory)
@@ -46,8 +47,8 @@
 
 ## v1.11.3 - Channel Block Fix + Search Query Filter
 - Fixed `/channel block @handle` not resolving handle to display name (blocked channels weren't filtered from search results)
-- **Breaking:** `/channel block` now requires `@handle` format (was free-text channel name), resolves via yt-dlp to match `/channel allow` behavior
-- **Breaking:** Search word filters now block the query itself (returns zero results immediately instead of only filtering titles)
+- `/channel block` now requires `@handle` format (was free-text channel name), resolves via yt-dlp to match `/channel allow` behavior
+- Search word filters now block the query itself (returns zero results immediately instead of only filtering titles)
 
 ## v1.11.2 - Timezone Fix + Category Cache + Activity Link
 
