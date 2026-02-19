@@ -27,6 +27,7 @@ body {
     color: var(--text-primary);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
 a {
@@ -120,6 +121,7 @@ main {
     max-width: 1200px;
     margin: 0 auto;
     padding: 24px 20px;
+    overflow-x: hidden;
 }
 
 /* === Section Titles === */
@@ -1315,9 +1317,11 @@ main {
     display: flex;
     gap: 8px;
     max-width: 480px;
+    min-width: 0;
+    flex: 1;
 }
 .cat-card-all {
-    padding: 8px 14px;
+    padding: 6px 10px;
     border-radius: 8px;
     border: 1.5px solid var(--border-subtle, #333);
     background: transparent;
@@ -1334,14 +1338,14 @@ main {
     border-color: rgba(255,255,255,0.15);
 }
 .cat-card {
-    padding: 8px 12px;
+    padding: 6px 8px;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
     border: 1.5px solid transparent;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     background: none;
     font-family: inherit;
     min-width: 0;
@@ -1362,11 +1366,15 @@ main {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    overflow: hidden;
 }
 .cat-card-name {
     font-size: 11px;
     font-weight: 600;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .cat-card-edu .cat-card-name { color: #66bb6a; }
 .cat-card-fun .cat-card-name { color: #ffa726; }
@@ -1374,6 +1382,7 @@ main {
     font-size: 10px;
     color: #888;
     line-height: 1.2;
+    white-space: nowrap;
 }
 .cat-card-exceeded .cat-card-sub { color: #e74c6f; }
 .cat-card-right {
@@ -1397,7 +1406,7 @@ main {
     display: block;
     margin-top: 4px;
     height: 6px;
-    width: 52px;
+    width: 40px;
     background: rgba(255,255,255,0.12);
     border-radius: 3px;
     overflow: hidden;
@@ -1410,12 +1419,7 @@ main {
 .cat-card-edu .cat-card-bar-fill { background: #43a047; }
 .cat-card-fun .cat-card-bar-fill { background: #ff8f00; }
 .cat-card-activity {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     flex-shrink: 0;
-    margin-left: auto;
-    width: 28px;
     font-size: 16px;
     text-decoration: none;
     opacity: 0.45;

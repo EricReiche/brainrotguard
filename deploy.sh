@@ -50,6 +50,7 @@ rm /tmp/brainrotguard.tar
 docker compose down 2>/dev/null || true
 docker compose build
 docker compose up -d
+docker image prune -f
 docker compose ps
 EOF
 

@@ -1,4 +1,11 @@
 # Changelog
+## v1.11.6 - Fix Mobile Horizontal Scroll on Category Cards
+- Added `overflow-x: hidden` to body and main to prevent horizontal scroll on mobile
+- Category card labels truncate with ellipsis on narrow screens
+- Tightened category card padding and progress bar width for mobile fit
+- Clock icon (activity link) sits inline without `margin-left: auto` push
+- Added `docker image prune -f` to deploy.sh for post-deploy cleanup
+
 ## v1.11.5 - Auto-resolve @handles for Inline Channel Actions
 - Inline Allow/Block Channel buttons now resolve @handle in background via yt-dlp
 - Startup backfill resolves missing @handles for legacy channels
