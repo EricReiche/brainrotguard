@@ -397,7 +397,7 @@ class BrainRotGuardBot:
             "`/time edu|fun <min|off>` - Category limits\n"
             "`/changelog` - Latest changes\n\n"
             "☕ [Buy me a coffee](https://ko-fi.com/coffee4jj)"
-        ), parse_mode=MD2)
+        ), parse_mode=MD2, disable_web_page_preview=True)
 
     _PENDING_PAGE_SIZE = 5
 
